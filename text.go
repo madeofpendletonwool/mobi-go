@@ -1,0 +1,239 @@
+// MOBI6 text assembly: trailing-entry stripping, per-record
+// decompression, concatenation, and section splitting.
+//
+// Ported with attribution from KindleUnpack's MobiHeader.getRawML
+// (lib/mobi_header.py, GPL-3.0,
+// https://github.com/kevinhendricks/KindleUnpack) and foliate-js's
+// MOBI6.init / #removeTrailingEntries / loadText (mobi.js, MIT,
+// https://github.com/johnfactotum/foliate-js).
+
+package mobi
+
+import (
+	"fmt"
+	"math/bits"
+	"regexp"
+	"slices"
+	"strconv"
+)
+
+// Section is one <mbp:pagebreak>-delimited chunk of a MOBI6 book's
+// text. Start and End are byte offsets into Book.RawText: sections are
+// contiguous, gapless, non-overlapping, and together cover the whole
+// text. The pagebreak tag that ends a section sits at the start of the
+// section that follows it (both port sources split this way and drop
+// the tags when rendering).
+type Section struct {
+	Start int // byte offset into RawText, inclusive
+	End   int // byte offset into RawText, exclusive
+}
+
+// Section-splitting and filepos patterns, ported verbatim (modulo RE2
+// syntax) from foliate-js's mbpPagebreakRegex / fileposRegex, which
+// match KindleUnpack's page_pattern / link_pattern. They run over the
+// raw bytes before decoding: MOBI6 HTML may be windows-1252, and every
+// offset they produce must stay a byte offset. Both patterns are
+// ASCII-safe on arbitrary bytes (negated classes, \d, \s only).
+var (
+	mbpPagebreakRE = regexp.MustCompile(`(?i)<\s*(?:mbp:)?pagebreak[^>]*>`)
+	fileposRE      = regexp.MustCompile(`(?i)<[^<>]+filepos=['"]?(\d+)[^<>]*>`)
+)
+
+// loadText returns text record i (0-based over the book's NumTextRecords
+// text records): the raw record bytes with their trailing bookkeeping
+// stripped, decompressed per the file's compression type. It is the
+// internal seam the HUFF/CDIC stage plugs its decompressor into; the
+// returned slice aliases internal buffers and must not be modified.
+func (b *Book) loadText(i int) ([]byte, error) {
+	if i < 0 || i >= int(b.palmdoc.NumTextRecords) {
+		return nil, fmt.Errorf("%w: text record %d of %d",
+			ErrRecordRange, i, b.palmdoc.NumTextRecords)
+	}
+	rec, err := b.pdb.Record(i + 1)
+	if err != nil {
+		return nil, err
+	}
+	rec, err = b.stripTrailingEntries(rec)
+	if err != nil {
+		return nil, err
+	}
+	switch b.palmdoc.Compression {
+	case compressionNone:
+		return rec, nil
+	case compressionPalmDOC:
+		return decompressPalmDOC(rec)
+	default:
+		// compressionHuffCDIC: decompression arrives with the
+		// HUFF/CDIC stage.
+		return nil, fmt.Errorf("%w: HUFF/CDIC text records are not supported yet",
+			ErrUnsupportedCompression)
+	}
+}
+
+// stripTrailingEntries removes the per-record trailing bookkeeping
+// bytes from a raw (still-compressed) text record: one varlen-sized
+// trailing data entry per bit set in trailingFlags>>1, then — when
+// trailingFlags bit 0 is set — the multibyte overlap bytes counted by
+// the final byte's low two bits.
+//
+// Strip-ordering verdict, recorded per the stage plan: KindleUnpack's
+// getRawML strips BOTH kinds from the compressed record BEFORE
+// decompression (trimTrailingDataEntries wraps loadSection, and its
+// result feeds self.unpack), entries first, multibyte bytes second.
+// foliate-js does the same in the same order (loadRecord →
+// removeTrailingEntries → decompress). The plan's caveat that
+// KindleUnpack strips the entries after decompression is mistaken:
+// the two port sources agree, and this implementation follows that
+// common order. KindleUnpack also skips stripping entirely for MOBI
+// header versions below 5 and for headers too short to carry the
+// flags field (the stage-3 parser already leaves such flags at zero);
+// the version gate is kept here.
+func (b *Book) stripTrailingEntries(rec []byte) ([]byte, error) {
+	if b.mobi.Version < 5 {
+		return rec, nil
+	}
+	for range bits.OnesCount32(b.mobi.TrailingFlags >> 1) {
+		n := varLenFromEnd(rec)
+		if n <= 0 || n > len(rec) {
+			return nil, fmt.Errorf("%w: trailing entry size %d exceeds the %d-byte record",
+				ErrCorrupt, n, len(rec))
+		}
+		rec = rec[:len(rec)-n]
+	}
+	if b.mobi.TrailingFlags&1 != 0 {
+		if len(rec) == 0 {
+			return nil, fmt.Errorf("%w: multibyte overlap bytes on an empty record", ErrCorrupt)
+		}
+		n := int(rec[len(rec)-1]&3) + 1
+		if n > len(rec) {
+			return nil, fmt.Errorf("%w: multibyte overlap length %d exceeds the %d-byte record",
+				ErrCorrupt, n, len(rec))
+		}
+		rec = rec[:len(rec)-n]
+	}
+	return rec, nil
+}
+
+// varLenFromEnd reads a variable-length quantity from the end of rec:
+// the last (up to) four bytes, seven bits per byte, where a byte with
+// its high bit set starts the value — reading forward, the accumulator
+// resets at each high-bit byte and whatever remains is the value.
+// Ported from KindleUnpack's getSizeOfTrailingDataEntry and foliate-js's
+// getVarLenFromEnd, which agree byte for byte.
+func varLenFromEnd(rec []byte) int {
+	n := 0
+	start := len(rec) - 4
+	if start < 0 {
+		start = 0
+	}
+	for _, v := range rec[start:] {
+		if v&0x80 != 0 {
+			n = 0
+		}
+		n = n<<7 | int(v&0x7F)
+	}
+	return n
+}
+
+// loadAllText assembles the book's raw text: every text record through
+// loadText, concatenated in order. The PalmDOC header's textLength is
+// advisory — the observed total can differ from it by record-boundary
+// slack — so it is deliberately not checked here.
+func (b *Book) loadAllText() error {
+	if b.textLoaded {
+		return nil
+	}
+	n := int(b.palmdoc.NumTextRecords)
+	parts := make([][]byte, 0, n)
+	total := 0
+	for i := range n {
+		part, err := b.loadText(i)
+		if err != nil {
+			return fmt.Errorf("text record %d: %w", i+1, err)
+		}
+		parts = append(parts, part)
+		total += len(part)
+	}
+	raw := make([]byte, 0, total)
+	for _, part := range parts {
+		raw = append(raw, part...)
+	}
+	b.rawText = raw
+	b.textLoaded = true
+	return nil
+}
+
+// RawText returns the book's full text as raw bytes: every text record
+// decompressed and concatenated in order, byte-exact. filepos values,
+// Section offsets, and every other position the library reports index
+// into these bytes, and MOBI6 text may be windows-1252 — do all
+// byte-offset math before decoding. The returned slice aliases the
+// Book; callers must not modify it.
+//
+// MOBI6 only: AZW3/KF8 files reassemble their text differently and
+// return nil until that stage lands.
+func (b *Book) RawText() []byte {
+	if b.mobi.Version >= 8 || !b.textLoaded {
+		return nil
+	}
+	return b.rawText
+}
+
+// Text returns the book's full text decoded per the declared encoding
+// (UTF-8 or windows-1252). MOBI6 only; KF8 files return "".
+func (b *Book) Text() string {
+	if b.mobi.Version >= 8 || !b.textLoaded {
+		return ""
+	}
+	return decodeString(b.mobi.Encoding, b.rawText)
+}
+
+// Sections splits the MOBI6 text at <mbp:pagebreak> tags and returns
+// the ranges as byte offsets into RawText. A book with no pagebreaks
+// is one section covering everything. MOBI6 only; KF8 files return nil.
+func (b *Book) Sections() []Section {
+	if b.mobi.Version >= 8 || !b.textLoaded {
+		return nil
+	}
+	raw := b.rawText
+	breaks := mbpPagebreakRE.FindAllIndex(raw, -1)
+	starts := make([]int, 0, len(breaks)+1)
+	starts = append(starts, 0)
+	for _, m := range breaks {
+		starts = append(starts, m[0])
+	}
+	sections := make([]Section, 0, len(starts))
+	for i, start := range starts {
+		end := len(raw)
+		if i+1 < len(starts) {
+			end = starts[i+1]
+		}
+		sections = append(sections, Section{Start: start, End: end})
+	}
+	return sections
+}
+
+// FileposTargets returns every filepos attribute value in the text —
+// byte offsets into RawText — deduplicated and sorted ascending.
+// Callers map them to anchors. Values too large to represent are
+// skipped. MOBI6 only; KF8 files return nil.
+func (b *Book) FileposTargets() []int {
+	if b.mobi.Version >= 8 || !b.textLoaded {
+		return nil
+	}
+	var targets []int
+	seen := make(map[int]struct{})
+	for _, m := range fileposRE.FindAllSubmatchIndex(b.rawText, -1) {
+		v, err := strconv.ParseInt(string(b.rawText[m[2]:m[3]]), 10, 63)
+		if err != nil {
+			continue
+		}
+		t := int(v)
+		if _, dup := seen[t]; !dup {
+			seen[t] = struct{}{}
+			targets = append(targets, t)
+		}
+	}
+	slices.Sort(targets)
+	return targets
+}
