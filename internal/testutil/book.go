@@ -44,6 +44,11 @@ type BookConfig struct {
 	// (the absolute record index of the first INDX record).
 	Indx *uint32
 
+	// Guide, when non-nil, is written into the KF8-only guide field
+	// (the absolute record index of the guide INDX). Only written for
+	// version >= 8 books.
+	Guide *uint32
+
 	// Record-0 extras, passed through to BuildRecord0.
 	Title string
 	EXTH  []EXTHRecord
@@ -112,6 +117,7 @@ func BuildBookParts(cfg BookConfig) ([]byte, [][]byte) {
 		TrailingFlags:   cfg.TrailingFlags,
 		FirstImageIndex: firstImage,
 		Indx:            cfg.Indx,
+		Guide:           cfg.Guide,
 		Title:           cfg.Title,
 		EXTH:            cfg.EXTH,
 	})

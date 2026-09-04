@@ -265,28 +265,9 @@ func TestEmptyText(t *testing.T) {
 	}
 }
 
-func TestVarLenFromEnd(t *testing.T) {
-	tests := []struct {
-		name string
-		in   []byte
-		want int
-	}{
-		{"empty", nil, 0},
-		{"single byte value 5", []byte{0x85}, 5},
-		{"single byte value 0", []byte{0x80}, 0},
-		{"two byte value", []byte{0x81, 0x22}, 0xA2}, // (1<<7)|0x22
-		{"terminator resets", []byte{0x11, 0x22, 0x85}, 5},
-		{"four byte window", []byte{0x99, 0x84, 0x03, 0x05}, 4<<14 | 3<<7 | 5},
-		{"window ignores earlier bytes", []byte{0x87, 0x99, 0x84, 0x03, 0x05}, 4<<14 | 3<<7 | 5},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := varLenFromEnd(tt.in); got != tt.want {
-				t.Errorf("varLenFromEnd(%x) = %d, want %d", tt.in, got, tt.want)
-			}
-		})
-	}
-}
+// The variable-length quantity decoder this file used to test lives in
+// internal/varlen now (varlen_test.go carries the table); the strip
+// path itself is covered by the trailing-entry tests above.
 
 func FuzzTextAssembly(f *testing.F) {
 	// Fuzz the whole text path over record bytes: Open (and where it

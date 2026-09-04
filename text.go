@@ -15,6 +15,8 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+
+	"github.com/madeofpendletonwool/mobi-go/internal/varlen"
 )
 
 // Section is one <mbp:pagebreak>-delimited chunk of a MOBI6 book's
@@ -97,7 +99,7 @@ func (b *Book) stripTrailingEntries(rec []byte) ([]byte, error) {
 		return rec, nil
 	}
 	for range bits.OnesCount32(b.mobi.TrailingFlags >> 1) {
-		n := varLenFromEnd(rec)
+		n := varlen.FromEnd(rec)
 		if n <= 0 || n > len(rec) {
 			return nil, fmt.Errorf("%w: trailing entry size %d exceeds the %d-byte record",
 				ErrCorrupt, n, len(rec))
@@ -118,26 +120,9 @@ func (b *Book) stripTrailingEntries(rec []byte) ([]byte, error) {
 	return rec, nil
 }
 
-// varLenFromEnd reads a variable-length quantity from the end of rec:
-// the last (up to) four bytes, seven bits per byte, where a byte with
-// its high bit set starts the value — reading forward, the accumulator
-// resets at each high-bit byte and whatever remains is the value.
-// Ported from KindleUnpack's getSizeOfTrailingDataEntry and foliate-js's
-// getVarLenFromEnd, which agree byte for byte.
-func varLenFromEnd(rec []byte) int {
-	n := 0
-	start := len(rec) - 4
-	if start < 0 {
-		start = 0
-	}
-	for _, v := range rec[start:] {
-		if v&0x80 != 0 {
-			n = 0
-		}
-		n = n<<7 | int(v&0x7F)
-	}
-	return n
-}
+// The variable-length quantity reads this file used to own moved to
+// internal/varlen (varlen.FromEnd here, varlen.Read in the index
+// layer) so text and INDX parsing share one codec.
 
 // loadAllText assembles the book's raw text: every text record through
 // loadText, concatenated in order. The PalmDOC header's textLength is
