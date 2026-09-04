@@ -74,7 +74,7 @@ func BuildBookParts(cfg BookConfig) ([]byte, [][]byte) {
 		// Trailing bookkeeping rides after the compressed payload: the
 		// stripper removes it from the compressed record before
 		// decompression (the ordering both port sources share).
-		rec = appendTrailingEntries(rec, cfg.TrailingFlags)
+		rec = AppendTrailingEntries(rec, cfg.TrailingFlags)
 		records = append(records, rec)
 		if end >= len(text) {
 			break
@@ -95,14 +95,14 @@ func BuildBookParts(cfg BookConfig) ([]byte, [][]byte) {
 	return rec0, records
 }
 
-// appendTrailingEntries lays out the per-record trailing bookkeeping
+// AppendTrailingEntries lays out the per-record trailing bookkeeping
 // the stripper removes: multibyte overlap bytes first, then one
 // varlen-sized trailing data entry per flag bit, entries outermost —
 // the exact reverse of the strip order (entries from the end first,
 // then the multibyte bytes). The multibyte pair is two bytes whose
 // final byte's low bits encode the count 2; each entry is four marker
 // bytes plus the one-byte varlen size 5 (which counts itself).
-func appendTrailingEntries(rec []byte, flags uint32) []byte {
+func AppendTrailingEntries(rec []byte, flags uint32) []byte {
 	if flags&1 != 0 {
 		rec = append(rec, 0xEE, 0x01)
 	}

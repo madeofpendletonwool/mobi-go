@@ -17,6 +17,13 @@
 // DRM scheme are detected and refused with a typed error; no code in
 // this package will ever decrypt DRM-protected content.
 //
+// # Concurrency
+//
+// A Book is single-goroutine state. HUFF/CDIC decompression memoizes
+// expanded dictionary phrases as records are decoded, mutating shared
+// state, so one Book must not be used from multiple goroutines at
+// once; open one Book per goroutine instead.
+//
 // # Provenance
 //
 // The implementation is ported with attribution from KindleUnpack

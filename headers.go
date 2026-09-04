@@ -141,6 +141,12 @@ type Book struct {
 	title      []byte // raw MOBI full name, from titleOffset/titleLength
 	rawText    []byte // assembled MOBI6 text, byte-exact
 	textLoaded bool
+
+	// huffcdic is the HUFF/CDIC decompressor, built lazily from the
+	// records the MOBI header points at and cached for the book's
+	// life. It memoizes expanded phrases into its dictionary as it
+	// decodes.
+	huffcdic func([]byte) ([]byte, error)
 }
 
 // Open parses the PalmDB container and the record-0 header chain of a
