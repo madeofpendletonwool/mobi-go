@@ -41,8 +41,8 @@ var (
 
 // loadText returns text record i (0-based over the book's NumTextRecords
 // text records): the raw record bytes with their trailing bookkeeping
-// stripped, decompressed per the file's compression type. It is the
-// internal seam the HUFF/CDIC stage plugs its decompressor into; the
+// stripped, decompressed per the file's compression type. HUFF/CDIC
+// records go through the book's cached decompressor (huffcdic.go); the
 // returned slice aliases internal buffers and must not be modified.
 func (b *Book) loadText(i int) ([]byte, error) {
 	if i < 0 || i >= int(b.palmdoc.NumTextRecords) {
@@ -62,11 +62,15 @@ func (b *Book) loadText(i int) ([]byte, error) {
 		return rec, nil
 	case compressionPalmDOC:
 		return decompressPalmDOC(rec)
+	case compressionHuffCDIC:
+		decompress, err := b.huffCDICDecompressor()
+		if err != nil {
+			return nil, err
+		}
+		return decompress(rec)
 	default:
-		// compressionHuffCDIC: decompression arrives with the
-		// HUFF/CDIC stage.
-		return nil, fmt.Errorf("%w: HUFF/CDIC text records are not supported yet",
-			ErrUnsupportedCompression)
+		return nil, fmt.Errorf("%w: compression %d",
+			ErrUnsupportedCompression, b.palmdoc.Compression)
 	}
 }
 

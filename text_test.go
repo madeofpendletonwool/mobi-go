@@ -210,13 +210,14 @@ func TestOpenTextRecordFailures(t *testing.T) {
 		t.Errorf("missing records: error = %v, want ErrRecordRange", err)
 	}
 
-	// HUFF/CDIC headers parse but text decompression is stage 5's.
+	// HUFF/CDIC compression with no HUFF/CDIC dictionary records is
+	// corrupt (the decompressor itself is huffcdic.go).
 	_, err = openBook(t, testutil.BuildBook(testutil.BookConfig{
 		Text:        bookText,
 		Compression: 17480,
 	}))
-	if !errors.Is(err, ErrUnsupportedCompression) {
-		t.Errorf("HUFF/CDIC text: error = %v, want ErrUnsupportedCompression", err)
+	if !errors.Is(err, ErrCorrupt) {
+		t.Errorf("HUFF/CDIC text without dictionary records: error = %v, want ErrCorrupt", err)
 	}
 }
 
