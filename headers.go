@@ -133,17 +133,23 @@ type kf8Header struct {
 //
 // A Book is stateful and not safe for concurrent use.
 type Book struct {
-	pdb     *pdbFile
-	palmdoc palmDocHeader
-	mobi    mobiHeader
-	kf8     *kf8Header
-	exth    *exthBlock
-	title   []byte // raw MOBI full name, from titleOffset/titleLength
+	pdb        *pdbFile
+	palmdoc    palmDocHeader
+	mobi       mobiHeader
+	kf8        *kf8Header
+	exth       *exthBlock
+	title      []byte // raw MOBI full name, from titleOffset/titleLength
+	rawText    []byte // assembled MOBI6 text, byte-exact
+	textLoaded bool
 }
 
 // Open parses the PalmDB container and the record-0 header chain of a
 // MOBI or AZW3 file. DRM-protected files are refused with ErrDRM
 // before any content is parsed.
+//
+// MOBI6 files (version < 8) load their full text eagerly, following
+// foliate-js's MOBI6 open: a book whose text records will not
+// decompress is refused whole rather than half-opened.
 func Open(r io.ReaderAt, size int64) (*Book, error) {
 	pdb, err := openPDB(r, size)
 	if err != nil {
@@ -156,6 +162,11 @@ func Open(r io.ReaderAt, size int64) (*Book, error) {
 	b := &Book{pdb: pdb}
 	if err := b.parseRecord0(rec0); err != nil {
 		return nil, err
+	}
+	if b.mobi.Version < 8 {
+		if err := b.loadAllText(); err != nil {
+			return nil, err
+		}
 	}
 	return b, nil
 }
