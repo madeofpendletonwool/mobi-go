@@ -31,6 +31,19 @@ type BookConfig struct {
 	// RawText must return it.
 	Text string
 
+	// Resources are appended after the text records as one contiguous
+	// run; FirstImageIndex is computed and written to point at the
+	// first one. Absent when empty.
+	Resources [][]byte
+
+	// TrailingRecords are appended after the resources without being
+	// counted as resources — INDX fixtures for boundary tests.
+	TrailingRecords [][]byte
+
+	// Indx, when non-nil, is written into the MOBI header's indx field
+	// (the absolute record index of the first INDX record).
+	Indx *uint32
+
 	// Record-0 extras, passed through to BuildRecord0.
 	Title string
 	EXTH  []EXTHRecord
@@ -81,16 +94,26 @@ func BuildBookParts(cfg BookConfig) ([]byte, [][]byte) {
 		}
 	}
 
+	numText := len(records)
+	var firstImage *uint32
+	if len(cfg.Resources) > 0 {
+		firstImage = U32(uint32(1 + numText))
+	}
+	records = append(records, cfg.Resources...)
+	records = append(records, cfg.TrailingRecords...)
+
 	rec0 := BuildRecord0(Record0Config{
-		Compression:    compression,
-		TextLength:     uint32(len(text)),
-		NumTextRecords: uint16(len(records)),
-		RecordSize:     cfg.RecordSize,
-		Encoding:       encoding,
-		Version:        version,
-		TrailingFlags:  cfg.TrailingFlags,
-		Title:          cfg.Title,
-		EXTH:           cfg.EXTH,
+		Compression:     compression,
+		TextLength:      uint32(len(text)),
+		NumTextRecords:  uint16(numText),
+		RecordSize:      cfg.RecordSize,
+		Encoding:        encoding,
+		Version:         version,
+		TrailingFlags:   cfg.TrailingFlags,
+		FirstImageIndex: firstImage,
+		Indx:            cfg.Indx,
+		Title:           cfg.Title,
+		EXTH:            cfg.EXTH,
 	})
 	return rec0, records
 }
