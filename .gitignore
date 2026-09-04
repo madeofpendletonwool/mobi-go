@@ -1,0 +1,22 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build output
+/bin/
+
+# Go workspace files
+/go.work
+go.work.sum
+
+# Coverage
+*.prof
+coverage.txt
+
+# Editor/OS noise
+.DS_Store
