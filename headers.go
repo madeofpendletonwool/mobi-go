@@ -147,6 +147,13 @@ type Book struct {
 	// life. It memoizes expanded phrases into its dictionary as it
 	// decodes.
 	huffcdic func([]byte) ([]byte, error)
+
+	// Lazily parsed TOC and guide, cached after their first call.
+	toc              []TOCItem
+	guide            []GuideEntry
+	tocErr, guideErr error
+	tocLoaded        bool
+	guideLoaded      bool
 }
 
 // Open parses the PalmDB container and the record-0 header chain of a
