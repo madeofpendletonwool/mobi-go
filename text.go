@@ -217,6 +217,40 @@ func (b *Book) Sections() []Section {
 	return sections
 }
 
+// HTML returns the section's slice of the book text, decoded per the
+// book's encoding, with every attribute left exactly as stored —
+// including the MOBI6 <img recindex="..."> and mediarecindex forms.
+// This layer never rewrites strings: the byte offsets the library
+// reports index into RawText, and any replacement here would shift
+// them. Callers resolve recindex values with Book.ResolveRecindex and
+// do their own rewriting at render time. The Book argument supplies
+// the bytes and encoding; Section is a plain byte range and stays
+// valid to copy and compare. MOBI6 only: a KF8 book (whose raw text
+// is not loaded by Open) yields "".
+func (s Section) HTML(b *Book) string {
+	raw := b.RawText()
+	if raw == nil {
+		return ""
+	}
+	start, end := s.Start, s.End
+	start = clamp(start, 0, len(raw))
+	end = clamp(end, 0, len(raw))
+	if end < start {
+		return ""
+	}
+	return decodeString(b.mobi.Encoding, raw[start:end])
+}
+
+func clamp(v, lo, hi int) int {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
+}
+
 // FileposTargets returns every filepos attribute value in the text —
 // byte offsets into RawText — deduplicated and sorted ascending.
 // Callers map them to anchors. Values too large to represent are
