@@ -1,0 +1,25 @@
+{
+  "book": {
+    "chapter_titles": [
+      "Alpha",
+      "Beta",
+      "Gamma"
+    ],
+    "cover_sha256": null,
+    "metadata": {
+      "authors": [],
+      "isbn": "",
+      "language": "en-us",
+      "publisher": "",
+      "title": "Café Synthétique"
+    },
+    "raw_text_len": 594,
+    "raw_text_sha256": "4a730875e49faeac3e699dee0cba3b8f10eca2acfc3f50628af1aad5743f6b50",
+    "resource_sha256": [],
+    "section_count": 4
+  },
+  "expect_error": null,
+  "has_mobi6_half": false,
+  "is_kf8": false,
+  "kind": "mobi6"
+}

@@ -63,7 +63,7 @@ const (
 	mobiDRMCountField    = 172
 	mobiFDST             = 192
 	mobiNumFDST          = 196
-	mobiTrailingFlags    = 240
+	mobiExtraFlags       = 242 // uint16: extra-record flags (trailing entries)
 	mobiIndx             = 244
 	mobiFrag             = 248
 	mobiSkel             = 252
@@ -115,8 +115,8 @@ type mobiHeader struct {
 	EXTHFlag        uint32
 	DRMOffset       int32 // -1 absent
 	DRMCount        uint32
-	TrailingFlags   uint32
-	Indx            int32 // NCX index, -1 absent
+	TrailingFlags   uint32 // the extra-record flags u16 at offset 242
+	Indx            int32  // NCX index, -1 absent
 }
 
 // kf8Header carries the KF8-only fields of the MOBI header, parsed
@@ -329,8 +329,8 @@ func (b *Book) parseRecord0(rec []byte) error {
 	if has(mobiDRMCountField, 4) {
 		m.DRMCount = be32(rec, mobiDRMCountField)
 	}
-	if has(mobiTrailingFlags, 4) {
-		m.TrailingFlags = be32(rec, mobiTrailingFlags)
+	if has(mobiExtraFlags, 2) {
+		m.TrailingFlags = uint32(be16(rec, mobiExtraFlags))
 	}
 	if has(mobiIndx, 4) {
 		m.Indx = idxField(be32(rec, mobiIndx))

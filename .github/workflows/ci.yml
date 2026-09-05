@@ -32,3 +32,24 @@ jobs:
           staticcheck ./...
       - name: test
         run: go test -race ./...
+
+  fuzz:
+    runs-on: ubuntu-latest
+    needs: ci
+    # ~30s per target plus the committed regression corpus (which the
+    # test job already runs as seeds). Pushes to main only: the pass
+    # is a hardening sweep, not a per-PR gate.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          check-latest: true
+      - name: fuzz
+        run: |
+          for target in FuzzOpen FuzzPDB FuzzHeaders FuzzPalmDOC FuzzHuffCDIC \
+                        FuzzResource FuzzINDX FuzzKF8Assembly FuzzTextAssembly; do
+            echo "=== $target ==="
+            go test -run='^$' -fuzz="$target" -fuzztime=30s .
+          done

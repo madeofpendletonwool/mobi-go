@@ -318,7 +318,8 @@ func TestNCXSyntheticBook(t *testing.T) {
 	sections := b.Sections()
 	boundaries := map[int]bool{}
 	for _, s := range sections {
-		boundaries[s.Start] = true
+		start, _ := s.ByteRange()
+		boundaries[start] = true
 	}
 
 	want := []TOCItem{
@@ -330,7 +331,7 @@ func TestNCXSyntheticBook(t *testing.T) {
 		{Label: "Chapter Two", StartByte: starts[1], Length: -1, Fid: -1, Off: -1},
 		{Label: "Chapter Three", StartByte: starts[2], Length: -1, Fid: -1, Off: -1},
 	}
-	got, err := b.NCX()
+	got, err := b.TOC()
 	if err != nil {
 		t.Fatalf("NCX: %v", err)
 	}
@@ -351,7 +352,7 @@ func TestNCXSyntheticBook(t *testing.T) {
 	}
 
 	// The cache returns the same tree without reparsing.
-	again, err := b.NCX()
+	again, err := b.TOC()
 	if err != nil || len(again) != len(got) {
 		t.Fatalf("second NCX() = (%d items, %v), want (%d, nil)", len(again), err, len(got))
 	}
@@ -369,7 +370,7 @@ func TestNCXCP1252Labels(t *testing.T) {
 		{Values: map[int][]int{1: {5}, 3: {built.CNCX[1]}, 4: {0}}},
 	}
 	b, _ := openIndexBook(t, testutil.BookConfig{Text: "hello"}, withEntries(base, entries, 0))
-	got, err := b.NCX()
+	got, err := b.TOC()
 	if err != nil {
 		t.Fatalf("NCX: %v", err)
 	}
@@ -396,7 +397,7 @@ func TestNCXChildRangeFallback(t *testing.T) {
 		{Values: map[int][]int{3: {built.CNCX[3]}, 4: {1}}},
 	}
 	b, _ := openIndexBook(t, testutil.BookConfig{Text: "hello"}, withEntries(base, entries, 0))
-	got, err := b.NCX()
+	got, err := b.TOC()
 	if err != nil {
 		t.Fatalf("NCX: %v", err)
 	}
@@ -428,7 +429,7 @@ func TestNCXFlatAndKF8Pos(t *testing.T) {
 		{Values: map[int][]int{3: {built.CNCX[1]}, 4: {0}, 6: {0x0A, 0x100}}},
 	}
 	b, _ := openIndexBook(t, testutil.BookConfig{Text: "hello"}, withEntries(base, entries, 0))
-	got, err := b.NCX()
+	got, err := b.TOC()
 	if err != nil {
 		t.Fatalf("NCX: %v", err)
 	}
@@ -500,7 +501,7 @@ func TestNCXTreeProperty(t *testing.T) {
 		}
 		cfg := withEntries(base, entries, 1+rng.IntN(3))
 		b, _ := openIndexBook(t, testutil.BookConfig{Text: "hello"}, cfg)
-		got, err := b.NCX()
+		got, err := b.TOC()
 		if err != nil {
 			t.Fatalf("iter %d: NCX: %v", iter, err)
 		}
@@ -540,7 +541,7 @@ func TestNCXLegacyTOCFallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	got, err := b.NCX()
+	got, err := b.TOC()
 	if err != nil {
 		t.Fatalf("NCX: %v", err)
 	}
@@ -566,7 +567,7 @@ func TestNCXNone(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	got, err := b.NCX()
+	got, err := b.TOC()
 	if err != nil || got != nil {
 		t.Fatalf("NCX = (%v, %v), want (nil, nil)", got, err)
 	}
@@ -736,7 +737,7 @@ func TestINDXCorrupt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b, _ := openIndexBookBytes(t, tt.records())
-			_, err := b.NCX()
+			_, err := b.TOC()
 			if err == nil {
 				t.Fatal("NCX succeeded on a corrupt index, want a typed error")
 			}
@@ -785,7 +786,7 @@ func FuzzINDX(f *testing.F) {
 		if err != nil {
 			return
 		}
-		if _, err := b.NCX(); err != nil &&
+		if _, err := b.TOC(); err != nil &&
 			!errors.Is(err, ErrCorrupt) && !errors.Is(err, ErrRecordRange) {
 			t.Fatalf("NCX error = %v, want a typed sentinel", err)
 		}

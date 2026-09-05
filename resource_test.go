@@ -445,7 +445,7 @@ func TestResourceINDXBoundary(t *testing.T) {
 	})
 }
 
-func TestSectionHTML(t *testing.T) {
+func TestSectionLoad(t *testing.T) {
 	text := `<html><body><img recindex="00001"><mbp:pagebreak><p>chapter two</p></body></html>`
 	b := openResourceBook(t, testutil.BookConfig{
 		Text:      text,
@@ -457,33 +457,51 @@ func TestSectionHTML(t *testing.T) {
 		t.Fatalf("len(Sections()) = %d, want 2", len(sections))
 	}
 	for i, s := range sections {
-		html := s.HTML(b)
-		if html != decodeString(b.mobi.Encoding, b.RawText()[s.Start:s.End]) {
-			t.Fatalf("section %d HTML is not the decoded raw slice", i)
+		start, end := s.ByteRange()
+		html, err := s.Load()
+		if err != nil {
+			t.Fatalf("section %d Load: %v", i, err)
+		}
+		if html != decodeString(b.mobi.Encoding, b.RawText()[start:end]) {
+			t.Fatalf("section %d content is not the decoded raw slice", i)
 		}
 		// Decoding must not shift anything: UTF-8 sections map
 		// byte-for-byte, so len(html) == End-Start.
-		if len(html) != s.End-s.Start {
-			t.Fatalf("section %d len(HTML) = %d, want %d", i, len(html), s.End-s.Start)
+		if len(html) != end-start {
+			t.Fatalf("section %d len = %d, want %d", i, len(html), end-start)
 		}
 	}
-	if want := `<html><body><img recindex="00001">`; sections[0].HTML(b)[:len(want)] != want {
-		t.Fatalf("section 0 HTML starts %q, want the raw recindex attribute left in place",
-			sections[0].HTML(b)[:len(want)])
+	first, err := sections[0].Load()
+	if err != nil {
+		t.Fatalf("section 0 Load: %v", err)
+	}
+	if want := `<html><body><img recindex="00001">`; first[:len(want)] != want {
+		t.Fatalf("section 0 starts %q, want the raw recindex attribute left in place",
+			first[:len(want)])
 	}
 
-	// Out-of-range sections clamp instead of panicking.
-	if got := (Section{Start: 1 << 30, End: 1<<30 + 4}).HTML(b); got != "" {
-		t.Fatalf("bogus section HTML = %q, want empty", got)
+	// Fabricated out-of-range sections clamp instead of panicking.
+	if got, err := (textSection{b: b, start: 1 << 30, end: 1<<30 + 4}).Load(); got != "" || err != nil {
+		t.Fatalf("bogus section Load = (%q, %v), want empty", got, err)
 	}
-	if got := (Section{Start: 4, End: 2}).HTML(b); got != "" {
-		t.Fatalf("inverted section HTML = %q, want empty", got)
+	if got, err := (textSection{b: b, start: 4, end: 2}).Load(); got != "" || err != nil {
+		t.Fatalf("inverted section Load = (%q, %v), want empty", got, err)
 	}
 
-	// KF8 books do not load MOBI6 text; HTML yields "".
+	// KF8 sections load their reassembled XHTML through the same
+	// interface.
 	kf8 := openResourceKF8Book(t, [][]byte{gif1x1})
-	if got := (Section{Start: 0, End: 4}).HTML(kf8); got != "" {
-		t.Fatalf("KF8 section HTML = %q, want empty", got)
+	kf8Sections := kf8.Sections()
+	if len(kf8Sections) == 0 {
+		t.Fatal("KF8 book has no sections")
+	}
+	start, end := kf8Sections[0].ByteRange()
+	if start != 0 || end != kf8.KF8Sections()[0].SizeBytes {
+		t.Fatalf("KF8 section range = [%d, %d), want [0, %d)",
+			start, end, kf8.KF8Sections()[0].SizeBytes)
+	}
+	if _, err := kf8Sections[0].Load(); err != nil {
+		t.Fatalf("KF8 section Load: %v", err)
 	}
 }
 

@@ -291,7 +291,7 @@ func TestKF8TOC(t *testing.T) {
 			{Label: "Gamma", Section: 2, Offset: toc2},
 		},
 	})
-	items, err := b.NCX()
+	items, err := b.TOC()
 	if err != nil {
 		t.Fatalf("NCX: %v", err)
 	}
@@ -531,7 +531,7 @@ func FuzzKF8Assembly(f *testing.F) {
 			!errors.Is(err, ErrCorrupt) && !errors.Is(err, ErrRecordRange) {
 			t.Errorf("ResolveKindleURI = %v, want typed", err)
 		}
-		if _, err := b.NCX(); err != nil && !errors.Is(err, ErrCorrupt) && !errors.Is(err, ErrRecordRange) {
+		if _, err := b.TOC(); err != nil && !errors.Is(err, ErrCorrupt) && !errors.Is(err, ErrRecordRange) {
 			t.Errorf("NCX = %v, want typed", err)
 		}
 	})

@@ -1,0 +1,44 @@
+{
+  "book": {
+    "chapter_titles": [
+      "Cover",
+      "Chapter 1",
+      "Chapter 2"
+    ],
+    "cover_sha256": "693d949d8c3fdc7fd4ace7c340b5f177a9f0c5be7bafee8bc93a7d88b7523d75",
+    "metadata": {
+      "authors": [
+        "KF8 Author"
+      ],
+      "isbn": "",
+      "language": "en-us",
+      "publisher": "Fixture Press",
+      "title": "Synthetic AZW3"
+    },
+    "part_len": [
+      120,
+      358,
+      170,
+      140
+    ],
+    "part_sha256": [
+      "ef1829256f50bd3582c098a7c89e4313be42e65f55d7efd1a5eed65f578371c6",
+      "89a155a201ad5355cfb9dbfae88663f8a6aa93cc02b9431f53462fa3e4e1658d",
+      "0e594f275c7c430c456ac7f50cfe5c1c87372d50dbbc5ba2807b3af23776c329",
+      "a0cf7264f62e3d7f6b6f1187103ee9b0ec7e0f3fd8da1da3974c26ebe1da8168"
+    ],
+    "raw_text_len": 831,
+    "raw_text_sha256": "ad5c1c7b51e522c1abc0a031f9451007339effbbadedbc76c2668d6379cca0c1",
+    "resource_sha256": [
+      "693d949d8c3fdc7fd4ace7c340b5f177a9f0c5be7bafee8bc93a7d88b7523d75",
+      "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+      "4a1e7bc61d4829312a37d6a202378cd5699619ead3e89e0a0d5ea36ad2dfe122",
+      "246cc1c17b37891d23ed70ef917fab7e534ccc19c29783ce974885bd577c5b72"
+    ],
+    "section_count": 4
+  },
+  "expect_error": null,
+  "has_mobi6_half": false,
+  "is_kf8": true,
+  "kind": "kf8"
+}

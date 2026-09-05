@@ -73,25 +73,31 @@ func NewHuffCDIC(phrases [][]byte, shortCount int, nested map[int][]int) *HuffCD
 	return h
 }
 
-// HUFFRecord renders the HUFF record: 16-byte header, table1 at 24,
-// table2 at 24+1024.
+// HUFFRecord renders the HUFF record: the 8-byte header (magic plus
+// the 0x18 table1 offset KindleUnpack's loader requires), table1 at
+// 24, table2 at 24+1024. Nonterminal table1 entries carry code length
+// 9 — real files never store nonterminal entries at or below 8 bits
+// (KindleUnpack's dict1_unpack asserts it), and the walk from 9 to 10
+// is exactly what table2's minimum codes encode.
 func (h *HuffCDIC) HUFFRecord() []byte {
 	const off1 = 24
 	const off2 = off1 + 4*256
 	rec := make([]byte, off2+8*32)
 	copy(rec, "HUFF")
+	put32(rec, 4, 24)
 	put32(rec, 8, off1)
 	put32(rec, 12, off2)
 	for b := 0; b < 256; b++ {
-		x := uint32(8) // nonterminal, codelen 8: start of the walk
+		x := uint32(9) // nonterminal, min code length 9: start of the walk
 		if b < h.shortCount {
 			x = 0x80 | 8 | uint32(2*b)<<8
 		}
 		put32(rec, off1+4*b, x)
 	}
-	// Walk bounds: prefix < 256 at length 8, < 512 at 9, then the
-	// long codes' range at 10; the maximum 10-bit code maps index 0
-	// of the long block... more precisely code 1023-i maps index i.
+	// Walk bounds: the long codes' 9-bit prefixes all sit below 512,
+	// so the walk advances 9 -> 10, where the minimum code 1024-D
+	// lands it on the code's own length; the maximum 10-bit code maps
+	// index 0 of the long block... more precisely code 1023-i maps i.
 	put32(rec, off2+7*8, 256)
 	put32(rec, off2+8*8, 512)
 	put32(rec, off2+9*8, uint32(1024-len(h.phrases)))

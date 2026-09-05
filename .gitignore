@@ -20,3 +20,7 @@ coverage.txt
 
 # Editor/OS noise
 .DS_Store
+
+# Local oracle checkout (never committed: no third-party code is
+# vendored in the module, only digests)
+tools/third_party/
