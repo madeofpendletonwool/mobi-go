@@ -1,0 +1,58 @@
+{
+  "expect_error": null,
+  "halves": {
+    "kf8": {
+      "chapter_titles": [
+        "KF8 Half"
+      ],
+      "cover_sha256": "693d949d8c3fdc7fd4ace7c340b5f177a9f0c5be7bafee8bc93a7d88b7523d75",
+      "kind": "kf8",
+      "metadata": {
+        "authors": [
+          "Combo Author"
+        ],
+        "isbn": "",
+        "language": "en-us",
+        "publisher": "",
+        "title": "Synthetic Combo"
+      },
+      "part_len": [
+        193
+      ],
+      "part_sha256": [
+        "0fe21eabd7315c0a8bfaadda973f72b7210485577038781e5094773805781cd0"
+      ],
+      "raw_text_len": 193,
+      "raw_text_sha256": "2240d945ae761daffe9cb19ca8d1af198ccc3e406c7f949f14ad9fc0beeb9b4c",
+      "resource_sha256": [
+        "693d949d8c3fdc7fd4ace7c340b5f177a9f0c5be7bafee8bc93a7d88b7523d75",
+        "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a"
+      ],
+      "section_count": 1
+    },
+    "mobi6": {
+      "chapter_titles": [],
+      "cover_sha256": "693d949d8c3fdc7fd4ace7c340b5f177a9f0c5be7bafee8bc93a7d88b7523d75",
+      "kind": "mobi6",
+      "metadata": {
+        "authors": [
+          "Combo Author"
+        ],
+        "isbn": "",
+        "language": "en-us",
+        "publisher": "",
+        "title": "Synthetic Combo"
+      },
+      "raw_text_len": 262,
+      "raw_text_sha256": "7eedd87ef2608463318c24c95677dda1dcfd94ad0155e22c213facf36ef18916",
+      "resource_sha256": [
+        "693d949d8c3fdc7fd4ace7c340b5f177a9f0c5be7bafee8bc93a7d88b7523d75",
+        "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a"
+      ],
+      "section_count": 3
+    }
+  },
+  "has_mobi6_half": true,
+  "is_kf8": true,
+  "kind": "combo"
+}

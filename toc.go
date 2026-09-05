@@ -94,7 +94,7 @@ var (
 	titleAttrRE    = regexp.MustCompile(`(?i)title\s*=\s*['"]([^'"]*)['"]`)
 )
 
-// NCX returns the book's table of contents as a tree.
+// TOC returns the book's table of contents as a tree.
 //
 // Fallback order: the INDX index named by the MOBI header's indx field
 // (present on essentially every MOBI6 book from this century and every
@@ -103,8 +103,12 @@ var (
 // A book with neither carries no table of contents and returns
 // (nil, nil).
 //
+// MOBI6 entries anchor at StartByte, a byte offset into RawText; KF8
+// entries resolve their kindle:pos pairs to a section index and byte
+// offset (TOCItem.Section, TOCItem.SectionOffset).
+//
 // Results are cached: the index is parsed once per Book.
-func (b *Book) NCX() ([]TOCItem, error) {
+func (b *Book) TOC() ([]TOCItem, error) {
 	if b.tocLoaded {
 		return b.toc, b.tocErr
 	}

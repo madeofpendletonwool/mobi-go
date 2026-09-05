@@ -98,13 +98,14 @@ func TestSections(t *testing.T) {
 	// Monotonic, contiguous, covering.
 	prevEnd := 0
 	for i, sec := range sections {
-		if sec.Start != prevEnd {
-			t.Errorf("section %d starts at %d, want %d (previous end)", i, sec.Start, prevEnd)
+		start, end := sec.ByteRange()
+		if start != prevEnd {
+			t.Errorf("section %d starts at %d, want %d (previous end)", i, start, prevEnd)
 		}
-		if sec.End <= sec.Start {
-			t.Errorf("section %d is empty or reversed: [%d, %d)", i, sec.Start, sec.End)
+		if end <= start {
+			t.Errorf("section %d is empty or reversed: [%d, %d)", i, start, end)
 		}
-		prevEnd = sec.End
+		prevEnd = end
 	}
 	if prevEnd != len(raw) {
 		t.Errorf("sections cover %d bytes, text is %d", prevEnd, len(raw))
@@ -113,7 +114,8 @@ func TestSections(t *testing.T) {
 	// Section byte ranges concatenate to the whole text.
 	var joined []byte
 	for _, sec := range sections {
-		joined = append(joined, raw[sec.Start:sec.End]...)
+		start, end := sec.ByteRange()
+		joined = append(joined, raw[start:end]...)
 	}
 	if !bytes.Equal(joined, raw) {
 		t.Error("concatenated sections do not reproduce the text")
@@ -121,16 +123,19 @@ func TestSections(t *testing.T) {
 
 	// Each section after the first starts on its pagebreak tag.
 	for _, sec := range sections[1:] {
-		if !bytes.HasPrefix(raw[sec.Start:], []byte("<")) {
-			t.Errorf("section at %d does not start on a tag: %q", sec.Start, raw[sec.Start:sec.Start+16])
+		start, _ := sec.ByteRange()
+		if !bytes.HasPrefix(raw[start:], []byte("<")) {
+			t.Errorf("section at %d does not start on a tag: %q", start, raw[start:start+16])
 		}
 	}
 
 	// Section 0 carries the guide, section 1 the second chapter, etc.
-	if !bytes.Contains(raw[sections[0].Start:sections[0].End], []byte("guide")) {
+	s0Start, s0End := sections[0].ByteRange()
+	s2Start, s2End := sections[2].ByteRange()
+	if !bytes.Contains(raw[s0Start:s0End], []byte("guide")) {
 		t.Error("section 0 does not contain the guide block")
 	}
-	if !bytes.Contains(raw[sections[2].Start:sections[2].End], []byte("<h1>Three</h1>")) {
+	if !bytes.Contains(raw[s2Start:s2End], []byte("<h1>Three</h1>")) {
 		t.Error("section 2 does not contain chapter three")
 	}
 }
@@ -139,8 +144,12 @@ func TestSectionsNoPagebreaks(t *testing.T) {
 	text := "<html><body>one section only</body></html>"
 	b := openBookOK(t, testutil.BuildBook(testutil.BookConfig{Text: text, Compression: 2}))
 	sections := b.Sections()
-	if len(sections) != 1 || sections[0].Start != 0 || sections[0].End != len(text) {
-		t.Fatalf("Sections = %+v, want one covering section", sections)
+	if len(sections) != 1 {
+		t.Fatalf("Sections = %d, want 1", len(sections))
+	}
+	start, end := sections[0].ByteRange()
+	if start != 0 || end != len(text) {
+		t.Fatalf("section range = [%d, %d), want [0, %d)", start, end, len(text))
 	}
 }
 
@@ -241,14 +250,17 @@ func TestTrailingEntryCorruption(t *testing.T) {
 
 func TestKF8TextZeroValues(t *testing.T) {
 	// A real KF8 book (raw flow, skeleton, fragments) still reports
-	// zero through the MOBI6 accessors: its text lives in
-	// KF8Sections and Flow.
+	// zero through the MOBI6 accessors: its text lives in Sections
+	// (the KF8 view) and Flow; RawText is a MOBI6 concept.
 	layout, _ := testutil.AuthorKF8([]testutil.KF8Author{{XHTML: bookText}}, nil)
 	data := testutil.BuildKF8(testutil.KF8BookSpec{Layout: layout}).Data
 	b := openBookOK(t, data)
-	if b.RawText() != nil || b.Text() != "" || b.Sections() != nil || b.FileposTargets() != nil {
-		t.Errorf("KF8 text accessors are non-zero: %+v %q %v %v",
-			b.RawText(), b.Text(), b.Sections(), b.FileposTargets())
+	if b.RawText() != nil || b.Text() != "" || b.FileposTargets() != nil {
+		t.Errorf("KF8 text accessors are non-zero: %+v %q %v",
+			b.RawText(), b.Text(), b.FileposTargets())
+	}
+	if got := len(b.Sections()); got != len(b.KF8Sections()) {
+		t.Errorf("KF8 Sections = %d, want %d KF8 sections", got, len(b.KF8Sections()))
 	}
 }
 
@@ -259,8 +271,10 @@ func TestEmptyText(t *testing.T) {
 	if len(b.RawText()) != 0 || b.Text() != "" {
 		t.Errorf("empty book text = %q", b.Text())
 	}
-	if sections := b.Sections(); len(sections) != 1 || sections[0] != (Section{0, 0}) {
-		t.Errorf("Sections = %+v, want one empty section", sections)
+	if sections := b.Sections(); len(sections) != 1 {
+		t.Errorf("Sections = %d, want one empty section", len(sections))
+	} else if start, end := sections[0].ByteRange(); start != 0 || end != 0 {
+		t.Errorf("empty section range = [%d, %d), want [0, 0)", start, end)
 	}
 	if got := b.FileposTargets(); len(got) != 0 {
 		t.Errorf("FileposTargets = %v, want none", got)
@@ -304,8 +318,9 @@ func FuzzTextAssembly(f *testing.F) {
 		}
 		_ = b.Text()
 		for _, sec := range b.Sections() {
-			if sec.Start < 0 || sec.End > len(b.RawText()) || sec.Start > sec.End {
-				t.Fatalf("section %+v outside %d-byte text", sec, len(b.RawText()))
+			start, end := sec.ByteRange()
+			if start < 0 || end > len(b.RawText()) || start > end {
+				t.Fatalf("section [%d, %d) outside %d-byte text", start, end, len(b.RawText()))
 			}
 		}
 		_ = b.FileposTargets()

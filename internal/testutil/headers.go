@@ -19,6 +19,7 @@ const (
 	r0TitleLengthField = 88
 	r0LocaleRegion     = 94
 	r0LocaleLanguage   = 95
+	r0MinVersion       = 104
 	r0FirstImageIndex  = 108
 	r0Huffcdic         = 112
 	r0NumHuffcdic      = 116
@@ -27,7 +28,7 @@ const (
 	r0DRMCount         = 172
 	r0FDST             = 192
 	r0NumFDST          = 196
-	r0TrailingFlags    = 240
+	r0ExtraFlags       = 242
 	r0Indx             = 244
 	r0Frag             = 248
 	r0Skel             = 252
@@ -216,6 +217,12 @@ func BuildRecord0(cfg Record0Config) []byte {
 	if covered(r0LocaleLanguage, 1) {
 		rec[r0LocaleLanguage] = localeLanguage
 	}
+	if covered(r0MinVersion, 4) {
+		// The minimum-version field: real files carry the format
+		// version here (KindleUnpack's trailing-entry gate reads it;
+		// our parser does not).
+		put32(rec, r0MinVersion, version)
+	}
 	if covered(r0FirstImageIndex, 4) {
 		putOpt(rec, r0FirstImageIndex, cfg.FirstImageIndex)
 	}
@@ -238,8 +245,8 @@ func BuildRecord0(cfg Record0Config) []byte {
 	if covered(r0DRMCount, 4) {
 		put32(rec, r0DRMCount, cfg.DRMCount)
 	}
-	if covered(r0TrailingFlags, 4) {
-		put32(rec, r0TrailingFlags, cfg.TrailingFlags)
+	if covered(r0ExtraFlags, 2) {
+		binary.BigEndian.PutUint16(rec[r0ExtraFlags:], uint16(cfg.TrailingFlags))
 	}
 	if covered(r0Indx, 4) {
 		putOpt(rec, r0Indx, cfg.Indx)

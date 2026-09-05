@@ -1,0 +1,34 @@
+{
+  "book": {
+    "chapter_titles": [
+      "Begin Reading",
+      "Synthetic PalmDOC",
+      "Second Chapter",
+      "Third Chapter"
+    ],
+    "cover_sha256": "693d949d8c3fdc7fd4ace7c340b5f177a9f0c5be7bafee8bc93a7d88b7523d75",
+    "metadata": {
+      "authors": [
+        "Jane Doe",
+        "John Roe"
+      ],
+      "isbn": "978-0000000000",
+      "language": "en-us",
+      "publisher": "Fixture Press",
+      "title": "Synthetic PalmDOC Book"
+    },
+    "raw_text_len": 421,
+    "raw_text_sha256": "6cfa2cb24799c8e44b7bfd8d7e51a79dad779aa2cc1591913142568edab51899",
+    "resource_sha256": [
+      "693d949d8c3fdc7fd4ace7c340b5f177a9f0c5be7bafee8bc93a7d88b7523d75",
+      "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+      "d20f6ffd523b78a86cd2f916fa34af5d1918d75f7b142237c752ad6b254213ab",
+      "8994cbb41321af9256bb95d33e059a8c17c5e502397e6a38937a4057eb853dcf"
+    ],
+    "section_count": 4
+  },
+  "expect_error": null,
+  "has_mobi6_half": false,
+  "is_kf8": false,
+  "kind": "mobi6"
+}

@@ -130,14 +130,16 @@ func (b *Book) NumResources() int {
 // end of the active half, but trailing index records belong to later
 // stages: when the MOBI header's indx field names their position it
 // bounds the run, and otherwise records are probed by magic so a
-// trailing INDX run is not reported as resources. Combo views cap at
-// the boundary — the KF8 half's shared images live in the MOBI6 half
-// (the header's 0x0800 "shared resources" flag), and the MOBI6 half's
-// records stop before the BOUNDARY record at boundary-1.
+// trailing INDX run is not reported as resources. Combo views cap
+// before the BOUNDARY record — the KF8 half's shared images live in
+// the MOBI6 half (the header's 0x0800 "shared resources" flag), the
+// MOBI6 half's records stop before the BOUNDARY record itself, and
+// KindleUnpack's resource loops end at the boundary record exclusive
+// (it is a placeholder slot, never a resource).
 func (b *Book) resourceEnd() int {
 	end := b.pdb.NumRecords()
 	if b.boundary >= 0 {
-		end = min(end, b.boundary)
+		end = min(end, b.boundary-1)
 	}
 	if b.m6End > 0 {
 		end = min(end, b.m6End)

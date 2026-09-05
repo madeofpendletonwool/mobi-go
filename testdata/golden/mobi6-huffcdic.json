@@ -1,0 +1,30 @@
+{
+  "book": {
+    "chapter_titles": [
+      "Compressed",
+      "Dictionary",
+      "Records"
+    ],
+    "cover_sha256": "693d949d8c3fdc7fd4ace7c340b5f177a9f0c5be7bafee8bc93a7d88b7523d75",
+    "metadata": {
+      "authors": [
+        "Huff Author"
+      ],
+      "isbn": "",
+      "language": "en-us",
+      "publisher": "",
+      "title": "HUFF CDIC Synthetic"
+    },
+    "raw_text_len": 439,
+    "raw_text_sha256": "00e6a1a0dbfb890e56d7592776d7171d319441be1c8036bd439e107dd49e61d3",
+    "resource_sha256": [
+      "693d949d8c3fdc7fd4ace7c340b5f177a9f0c5be7bafee8bc93a7d88b7523d75",
+      "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a"
+    ],
+    "section_count": 4
+  },
+  "expect_error": null,
+  "has_mobi6_half": false,
+  "is_kf8": false,
+  "kind": "mobi6"
+}

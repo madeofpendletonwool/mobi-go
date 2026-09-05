@@ -28,6 +28,7 @@ func put16be(b []byte, off int, v uint16) {
 func handHUFF(table1 []byte, table2 [][2]uint32) []byte {
 	rec := make([]byte, 24+1024+8*len(table2))
 	copy(rec, "HUFF")
+	put32be(rec, 4, 24) // the header word KindleUnpack's loader requires
 	put32be(rec, 8, 24)
 	put32be(rec, 12, 24+1024)
 	copy(rec[24:], table1)
@@ -139,15 +140,15 @@ func mixedHandFixture() (huff, cdic, stream []byte, want string) {
 	}
 	table1 := make([]byte, 1024)
 	for b := range 256 {
-		x := uint32(8) // nonterminal, codelen 8: walk from here
+		x := uint32(9) // nonterminal, min length 9: real files never store <= 8
 		if b < 4 {
 			x = 0x80 | 8 | uint32(2*b)<<8 // terminal: index = 2b - b
 		}
 		put32be(table1, 4*b, x)
 	}
 	table2 := make([][2]uint32, 32)
-	table2[7] = [2]uint32{256, 0}         // length 8: every prefix walks
-	table2[8] = [2]uint32{512, 0}         // length 9: ditto
+	table2[7] = [2]uint32{256, 0}         // length 8: unused (walk starts at 9)
+	table2[8] = [2]uint32{512, 0}         // length 9: every prefix walks
 	table2[9] = [2]uint32{1024 - 8, 1023} // length 10: the long codes
 	huff = handHUFF(table1, table2)
 	cdic = handCDIC(phrases, map[int]bool{0: true})

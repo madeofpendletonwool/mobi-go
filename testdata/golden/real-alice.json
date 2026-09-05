@@ -1,0 +1,64 @@
+{
+  "book": {
+    "chapter_titles": [
+      "I. Down the Rabbit-Hole",
+      "II. The Pool of Tears",
+      "III. A Caucus-Race and a Long Tale",
+      "IV. The Rabbit Sends in a Little Bill",
+      "V. Advice from a Caterpillar",
+      "VI. Pig and Pepper",
+      "VII. A Mad Tea-Party",
+      "VIII. The Queen's Croquet-Ground",
+      "IX. The Mock Turtle's Story",
+      "X. The Lobster Quadrille",
+      "XI. Who Stole the Tarts?",
+      "XII. Alice's Evidence"
+    ],
+    "cover_sha256": null,
+    "metadata": {
+      "authors": [
+        "Lewis Carroll"
+      ],
+      "isbn": "",
+      "language": "en",
+      "publisher": "D. Appleton and Co",
+      "title": "Alice's Adventures in Wonderland"
+    },
+    "raw_text_len": 200625,
+    "raw_text_sha256": "d3e6277d710bace7d3f9e0d12c5a89aeca2b5c9e890fb7bf86c1bf9a79948f37",
+    "resource_sha256": [
+      "1dc961b0cf58c4a8807f70983ea385510fa7c825f40821ff02c601cb3a70e23e",
+      "3c7b5bbd13416af23f817755d59691380e625be95aa7d6223221288b4c5029a9",
+      "d114fefd4f28529f14c9ca383313585e2cc3853f06c7f2e3fb05d34242d9a9dc",
+      "f44a576607d1ed8df22a749317e6a086759c356d65f3f7b886a111e85d8b0822",
+      "1a12a33c510bf39377a1c3a3d84e341fc9c208a33c1d4285b7f470c42c506085",
+      "52eb1142a09bbb04f0bcefd26a893ffac9c9e345b42504cb58bd1a4609d3f9b7",
+      "d7aecdd91498f63eb083316f268bc5d6a7f5a50861532407ea31266b9ef3ff75",
+      "33d4b9bf58caeb5645426eb5b372e3383f333d8c80fae108554e7f89a012e228",
+      "22e8f0d7402b7f1cbd1bc643780928d85ffe19e8de9d52557487fd1d0325dc55",
+      "b0e6792d7e32616faf45fcd48259b908dfd91bf222ebc9ba7c701d072483710d",
+      "367effa89b1f91036e63a887d5a56448672a4c7e32894c7ee326a0da718c7bef",
+      "7a72ee4e91e41bdaf583ce4f72c2d23af8c89e748c684ea2ac1e9c4f76d3d8e6",
+      "f0aeafa7133241507cb3df2290c3d6a4157c2a566310e0c4c297e4367a15d7f9",
+      "0bc5bb89e6c3d9ad97adc6008fe251139aa531364e6f38ec6ce9892ed8c30142",
+      "f2d6e00c4ca6adc6ce93b0ee0b90e0a22ba1d72f11086d5b79d41e52a64ba67d",
+      "ae8dd519506b0fc80b411eb56ebbb0de6a5c38c42d57bc38df0dcbd612add8f1",
+      "ff5d0f9522a08a0a5e6c89236a79fd9d1fa4a17ec2a47955900d71fd623e92b3",
+      "f3fee4167bd253a042e803dd6df4dd23511068994d1be5d6564384ce1c2c54d3",
+      "b5405e5a1b2c8aa2b4c9afab0418cf4cb44519b7ffcb24d20fab142da0426424",
+      "6c03d65eae738ca476a8b05ad448111fb939deefe663010367ea60eea7fca1e3",
+      "7eec7e93fb4856568e9fd75da22ee6d6ab3170d4b380b1946a2bb40a616abef6",
+      "bea2df5b82f88d192027d6318cc669aaf7a319ac491e7cfb0541e5d9010e6b37",
+      "d64dde00b1689d8f0b950fd1408447b80d58b8d42ebfb604c70e8e4a93e179ec",
+      "98a594adb143b30cf092d15803a97070fc67f737cee2f995a9920e58fbdef562",
+      "17d828b58581e73e82fa84d0ab2a44580af6787cb0a814c51b8e70e36ab6625c",
+      "c9b410a3ea20591a11c85a50140165e3654ec9b446f3903db742854316561f60",
+      "3712d3408f89530c1f548f6e95a9b57dac62281d8f5fcaa8dcd47d1245f8de56"
+    ],
+    "section_count": 15
+  },
+  "expect_error": null,
+  "has_mobi6_half": false,
+  "is_kf8": false,
+  "kind": "mobi6"
+}

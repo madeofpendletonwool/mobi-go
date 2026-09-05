@@ -19,15 +19,40 @@ import (
 	"github.com/madeofpendletonwool/mobi-go/internal/varlen"
 )
 
-// Section is one <mbp:pagebreak>-delimited chunk of a MOBI6 book's
-// text. Start and End are byte offsets into Book.RawText: sections are
-// contiguous, gapless, non-overlapping, and together cover the whole
-// text. The pagebreak tag that ends a section sits at the start of the
-// section that follows it (both port sources split this way and drop
-// the tags when rendering).
-type Section struct {
-	Start int // byte offset into RawText, inclusive
-	End   int // byte offset into RawText, exclusive
+// textSection is one <mbp:pagebreak>-delimited chunk of a MOBI6
+// book's text, exposed through the public Section interface. Start and
+// End are byte offsets into Book.RawText: sections are contiguous,
+// gapless, non-overlapping, and together cover the whole text. The
+// pagebreak tag that ends a section sits at the start of the section
+// that follows it (both port sources split this way and drop the tags
+// when rendering).
+type textSection struct {
+	b     *Book
+	start int // byte offset into RawText, inclusive
+	end   int // byte offset into RawText, exclusive
+}
+
+// ByteRange implements Section with the section's RawText range.
+func (s textSection) ByteRange() (int, int) { return s.start, s.end }
+
+// Load implements Section: the section's slice of the book text,
+// decoded per the book's encoding, with every attribute left exactly
+// as stored — including the MOBI6 <img recindex="..."> and
+// mediarecindex forms. This layer never rewrites strings: the byte
+// offsets the library reports index into RawText, and any replacement
+// here would shift them. Callers resolve recindex values with
+// Book.ResolveRecindex and do their own rewriting at render time.
+func (s textSection) Load() (string, error) {
+	raw := s.b.RawText()
+	if raw == nil {
+		return "", fmt.Errorf("%w: section Load on a book without text", ErrCorrupt)
+	}
+	start := clamp(s.start, 0, len(raw))
+	end := clamp(s.end, 0, len(raw))
+	if end < start {
+		return "", nil
+	}
+	return decodeString(s.b.mobi.Encoding, raw[start:end]), nil
 }
 
 // Section-splitting and filepos patterns, ported verbatim (modulo RE2
@@ -186,14 +211,15 @@ func (b *Book) Text() string {
 	return decodeString(b.mobi.Encoding, b.rawText)
 }
 
-// Sections splits the MOBI6 text at <mbp:pagebreak> tags and returns
-// the ranges as byte offsets into RawText. A book with no pagebreaks
-// is one section covering everything. MOBI6 only; KF8 files return nil.
-func (b *Book) Sections() []Section {
-	if b.mobi.Version >= 8 || !b.textLoaded {
+// textSections splits the MOBI6 text at <mbp:pagebreak> tags and
+// returns the ranges as byte offsets into RawText. A book with no
+// pagebreaks is one section covering everything. Called by the
+// unified Book.Sections.
+func (b *Book) textSections() []Section {
+	raw := b.rawText
+	if !b.textLoaded {
 		return nil
 	}
-	raw := b.rawText
 	breaks := mbpPagebreakRE.FindAllIndex(raw, -1)
 	starts := make([]int, 0, len(breaks)+1)
 	starts = append(starts, 0)
@@ -206,33 +232,9 @@ func (b *Book) Sections() []Section {
 		if i+1 < len(starts) {
 			end = starts[i+1]
 		}
-		sections = append(sections, Section{Start: start, End: end})
+		sections = append(sections, textSection{b: b, start: start, end: end})
 	}
 	return sections
-}
-
-// HTML returns the section's slice of the book text, decoded per the
-// book's encoding, with every attribute left exactly as stored —
-// including the MOBI6 <img recindex="..."> and mediarecindex forms.
-// This layer never rewrites strings: the byte offsets the library
-// reports index into RawText, and any replacement here would shift
-// them. Callers resolve recindex values with Book.ResolveRecindex and
-// do their own rewriting at render time. The Book argument supplies
-// the bytes and encoding; Section is a plain byte range and stays
-// valid to copy and compare. MOBI6 only: a KF8 book (whose raw text
-// is not loaded by Open) yields "".
-func (s Section) HTML(b *Book) string {
-	raw := b.RawText()
-	if raw == nil {
-		return ""
-	}
-	start, end := s.Start, s.End
-	start = clamp(start, 0, len(raw))
-	end = clamp(end, 0, len(raw))
-	if end < start {
-		return ""
-	}
-	return decodeString(b.mobi.Encoding, raw[start:end])
 }
 
 func clamp(v, lo, hi int) int {

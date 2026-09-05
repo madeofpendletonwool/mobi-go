@@ -1,0 +1,63 @@
+{
+  "book": {
+    "chapter_titles": [
+      "Around theWorld in 28Languages",
+      "Copyright",
+      "Introduction",
+      "WHAKAPUAKITANGA WHANUI O NGA MANA O TE TANGATA - 1948",
+      "PANDAIGDIG NA PAGPAPAHAYAG NG MGA KARAPATAN NG TAO",
+      "『世界人権宣言』",
+      "세 계 인 권 선 언",
+      "世界人权宣言",
+      "Tuyên ngôn toàn thế giới về nhân quyền của Liên Hợp Quốc",
+      "ปฏิญญาสากลว่าด้วยสิทธิมนุษยชน",
+      "மனித உரிமைகள் பற்றிய உலகப் பிரகடனம்",
+      "मानव अधिकारको विश्वव्यापी घोषणा",
+      "मानव अधिकारों की सार्वभौम घोषणा",
+      "मानवी अधिकाराचा जागतिक जाहीरनामा",
+      "മനുഷ്യാവകാശങ്ങളെക്കുറിക്കുന്ന പൊതുപ്രഖ്യാപനം",
+      "ਮਨੁੱਖੀ ਅਧਿਕਾਰਾਂ ਬਾਰੇ ਵਿਸ਼ਵਵਿਆਪੀ ਐਲਾਨਨਾਮਾ",
+      "Всеобщая декларация прав человека",
+      "الإعلان العالمي لحقوق الإنسان",
+      "UMOJA WA MATAIFA OFISI YA IDARA YA HABARI TAARIFA YA ULIMWENGU JUU YA HAKI ZA BINADAMU",
+      "ስለሰብአዊ፡መብቶች፡ለማስተማር፡ የሚረዱ፡አንዳን፡ዘዴዎች።",
+      "הכרזה לכל באי עולם בדבר זכויות האדם",
+      "POWSZECHNA DEKLARACJA PRAW CZŁOWIEKA",
+      "ΟΙΚΟΥΜΕΝΙΚΗ ΔΙΑΚΗΡΥΞΗ ΓΙΑ ΤΑ ΑΝΘΡΩΠΙΝΑ ΔΙΚΑΙΩΜΑΤΑ",
+      "Die Allgemeine Erklärung der Menschenrechte",
+      "DICHIARAZIONE UNIVERSALE DEI DIRITTI UMANI",
+      "Déclaration universelle des droits de l’homme",
+      "Declaración Universal de Derechos Humanos",
+      "ÌKÉDE KÁRÍAYÉ FÚN È̩TÓ̩ O̩MO̩NÌYÀN",
+      "Universal Declaration of Human Rights",
+      "Declaração dos Direitos Humanos",
+      "OFISA O LE KOMESINA SILI O MALO AUFAATASI MO AIA TATAU A TAGATA SOIFUA"
+    ],
+    "cover_sha256": "c4b1378ecf65e323ad9579c8a4be452d0a4c9c65ede9711648a7f100f50481b1",
+    "metadata": {
+      "authors": [
+        "Infogrid Pacific"
+      ],
+      "isbn": "",
+      "language": "en",
+      "publisher": "Infogrid Pacific",
+      "title": "Around the World in 28 Languages"
+    },
+    "raw_text_len": 746637,
+    "raw_text_sha256": "d93d8a4a21af18b4eaf61101440a696a4f861c02ecb9ce1a701f0ec69cb1ad7c",
+    "resource_sha256": [
+      "d7841310ef197104617c70381d99b6e1a1b8fff2be487f21966666eae98ea9f0",
+      "94bfd1337dd42441e04c41c4112bc63fa7c446c7aed4aa0a3144b615d0cbc4b1",
+      "c4b1378ecf65e323ad9579c8a4be452d0a4c9c65ede9711648a7f100f50481b1",
+      "f46587773c0db268a029ed02761a51cb7438cb5898ee6014045a73f82d3b8938",
+      "17d828b58581e73e82fa84d0ab2a44580af6787cb0a814c51b8e70e36ab6625c",
+      "45fa745e4dc0a0a912ae0b872b2ac67603c101d87603ab94e5ee262cf8042ca5",
+      "3712d3408f89530c1f548f6e95a9b57dac62281d8f5fcaa8dcd47d1245f8de56"
+    ],
+    "section_count": 33
+  },
+  "expect_error": null,
+  "has_mobi6_half": false,
+  "is_kf8": false,
+  "kind": "mobi6"
+}
