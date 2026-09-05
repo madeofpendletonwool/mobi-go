@@ -37,6 +37,20 @@ func openResourceBook(t *testing.T, cfg testutil.BookConfig) *Book {
 	return b
 }
 
+// openResourceKF8Book builds a minimal valid KF8 book around the
+// given resources (a v8 book now eagerly reassembles, so it needs a
+// real skeleton and fragment index).
+func openResourceKF8Book(t *testing.T, resources [][]byte) *Book {
+	t.Helper()
+	layout, _ := testutil.AuthorKF8([]testutil.KF8Author{{XHTML: "<html><body><p>kf8</p></body></html>"}}, nil)
+	data := testutil.BuildKF8(testutil.KF8BookSpec{Layout: layout, Resources: resources}).Data
+	b, err := Open(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	return b
+}
+
 func TestResourceImageFormats(t *testing.T) {
 	forms := []struct {
 		name string
@@ -288,11 +302,7 @@ func TestResourceFont(t *testing.T) {
 	// resource path is record-based and must work there too.
 	t.Run("kf8 font", func(t *testing.T) {
 		rec := buildFontRecord(font, key16, nil, true, true)
-		b := openResourceBook(t, testutil.BookConfig{
-			Version:   8,
-			Text:      "kf8",
-			Resources: [][]byte{rec},
-		})
+		b := openResourceKF8Book(t, [][]byte{rec})
 		if !b.IsKF8() {
 			t.Fatal("fixture is not KF8")
 		}
@@ -471,7 +481,7 @@ func TestSectionHTML(t *testing.T) {
 	}
 
 	// KF8 books do not load MOBI6 text; HTML yields "".
-	kf8 := openResourceBook(t, testutil.BookConfig{Version: 8, Text: text, Resources: [][]byte{gif1x1}})
+	kf8 := openResourceKF8Book(t, [][]byte{gif1x1})
 	if got := (Section{Start: 0, End: 4}).HTML(kf8); got != "" {
 		t.Fatalf("KF8 section HTML = %q, want empty", got)
 	}

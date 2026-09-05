@@ -586,13 +586,11 @@ func TestGuideKF8(t *testing.T) {
 	}
 	guide := withEntries(base, entries, 0)
 	guideBuilt := testutil.BuildIndex(guide)
-	guidePos := uint32(2) // record 0 + one text record
-	data := testutil.BuildBook(testutil.BookConfig{
-		Version:         8,
-		Text:            "x",
-		TrailingRecords: guideBuilt.Records,
-		Guide:           &guidePos,
-	})
+	layout, _ := testutil.AuthorKF8([]testutil.KF8Author{{XHTML: "<html><body><p>x</p></body></html>"}}, nil)
+	data := testutil.BuildKF8(testutil.KF8BookSpec{
+		Layout:       layout,
+		ExtraRecords: guideBuilt.Records,
+	}).Data
 	b, err := Open(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		t.Fatalf("Open: %v", err)

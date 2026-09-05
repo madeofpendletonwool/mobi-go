@@ -301,9 +301,9 @@ func (b *Book) huffCDICDecompressor() (func([]byte) ([]byte, error), error) {
 	if b.huffcdic != nil {
 		return b.huffcdic, nil
 	}
-	first := int64(b.mobi.Huffcdic)
+	first := int64(b.start) + int64(b.mobi.Huffcdic)
 	count := int64(b.mobi.NumHuffcdic)
-	if first < 0 || count < 1 {
+	if b.mobi.Huffcdic < 0 || count < 1 {
 		return nil, fmt.Errorf("%w: HUFF/CDIC compression with dictionary index %d and count %d",
 			ErrCorrupt, b.mobi.Huffcdic, b.mobi.NumHuffcdic)
 	}

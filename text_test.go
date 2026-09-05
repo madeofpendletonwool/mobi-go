@@ -240,12 +240,14 @@ func TestTrailingEntryCorruption(t *testing.T) {
 }
 
 func TestKF8TextZeroValues(t *testing.T) {
-	b := openBookOK(t, testutil.BuildBook(testutil.BookConfig{
-		Text:    bookText,
-		Version: 8,
-	}))
+	// A real KF8 book (raw flow, skeleton, fragments) still reports
+	// zero through the MOBI6 accessors: its text lives in
+	// KF8Sections and Flow.
+	layout, _ := testutil.AuthorKF8([]testutil.KF8Author{{XHTML: bookText}}, nil)
+	data := testutil.BuildKF8(testutil.KF8BookSpec{Layout: layout}).Data
+	b := openBookOK(t, data)
 	if b.RawText() != nil || b.Text() != "" || b.Sections() != nil || b.FileposTargets() != nil {
-		t.Errorf("KF8 text accessors are non-zero before the KF8 stage: %+v %q %v %v",
+		t.Errorf("KF8 text accessors are non-zero: %+v %q %v %v",
 			b.RawText(), b.Text(), b.Sections(), b.FileposTargets())
 	}
 }

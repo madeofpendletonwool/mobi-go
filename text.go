@@ -41,6 +41,13 @@ var (
 	fileposRE      = regexp.MustCompile(`(?i)<[^<>]+filepos=['"]?(\d+)[^<>]*>`)
 )
 
+// loadRecord returns record i counted from the active half's start
+// (record 0 of a combo file's KF8 half sits at Book.start): the
+// offset-shifted record access every half-relative index goes through.
+func (b *Book) loadRecord(i int) ([]byte, error) {
+	return b.pdb.Record(b.start + i)
+}
+
 // loadText returns text record i (0-based over the book's NumTextRecords
 // text records): the raw record bytes with their trailing bookkeeping
 // stripped, decompressed per the file's compression type. HUFF/CDIC
@@ -51,7 +58,7 @@ func (b *Book) loadText(i int) ([]byte, error) {
 		return nil, fmt.Errorf("%w: text record %d of %d",
 			ErrRecordRange, i, b.palmdoc.NumTextRecords)
 	}
-	rec, err := b.pdb.Record(i + 1)
+	rec, err := b.loadRecord(i + 1)
 	if err != nil {
 		return nil, err
 	}
@@ -159,8 +166,10 @@ func (b *Book) loadAllText() error {
 // byte-offset math before decoding. The returned slice aliases the
 // Book; callers must not modify it.
 //
-// MOBI6 only: AZW3/KF8 files reassemble their text differently and
-// return nil until that stage lands.
+// MOBI6 only: AZW3/KF8 books reassemble their text as sections
+// (KF8Sections) and expose flow bytes through Flow; RawText returns
+// nil for them. The MOBI6 half of a combo file reads normally through
+// MOBI6Half.
 func (b *Book) RawText() []byte {
 	if b.mobi.Version >= 8 || !b.textLoaded {
 		return nil

@@ -139,8 +139,33 @@ type Book struct {
 	kf8        *kf8Header
 	exth       *exthBlock
 	title      []byte // raw MOBI full name, from titleOffset/titleLength
-	rawText    []byte // assembled MOBI6 text, byte-exact
+	rawText    []byte // assembled MOBI6 text / KF8 raw flow, byte-exact
 	textLoaded bool
+
+	// start is the record offset of the active half: 0 for plain
+	// files, the combo boundary for the KF8 half of a combo file
+	// (every index the headers name — text records, HUFF/CDIC,
+	// FDST, INDX — counts from it). boundary is the combo boundary
+	// record index, -1 when the file is not a combo. m6 retains the
+	// MOBI6 half's original header parse for MOBI6Half. m6End caps
+	// record scans on a MOBI6-half view (its records stop before
+	// the combo's BOUNDARY record), -1 otherwise.
+	start    int
+	boundary int
+	m6       *mobiHalf
+	m6End    int
+
+	// KF8 reassembly state, loaded eagerly at Open for version >= 8
+	// (kf8.go).
+	fdst          []fdstRange
+	skels         []kf8Skel
+	frags         []kf8Frag
+	kf8Sections   []KF8Section
+	sectionOfFrag []int // fragment row -> section index
+	fragBySeq     map[int]int
+	fragBase      int // flow-0 start: skeleton/fragment offsets count from it
+	kf8Loaded     bool
+	pageSpreads   map[int]string
 
 	// huffcdic is the HUFF/CDIC decompressor, built lazily from the
 	// records the MOBI header points at and cached for the book's
@@ -156,13 +181,27 @@ type Book struct {
 	guideLoaded      bool
 }
 
+// mobiHalf retains one half's header parse in a combo file.
+type mobiHalf struct {
+	palmdoc palmDocHeader
+	mobi    mobiHeader
+	kf8     *kf8Header
+	exth    *exthBlock
+	title   []byte
+}
+
 // Open parses the PalmDB container and the record-0 header chain of a
 // MOBI or AZW3 file. DRM-protected files are refused with ErrDRM
 // before any content is parsed.
 //
-// MOBI6 files (version < 8) load their full text eagerly, following
-// foliate-js's MOBI6 open: a book whose text records will not
-// decompress is refused whole rather than half-opened.
+// Both halves load eagerly, following the MOBI6 open in foliate-js: a
+// book whose text records will not decompress is refused whole rather
+// than half-opened. MOBI6 files assemble their full text; KF8 files
+// decompress the raw flow and reassemble every section.
+//
+// Combo files (MOBI6 plus KF8, named by EXTH 121) open as their KF8
+// half; HasMOBI6Half reports them and MOBI6Half returns the other
+// view.
 func Open(r io.ReaderAt, size int64) (*Book, error) {
 	pdb, err := openPDB(r, size)
 	if err != nil {
@@ -172,14 +211,23 @@ func Open(r io.ReaderAt, size int64) (*Book, error) {
 	if err != nil {
 		return nil, err
 	}
-	b := &Book{pdb: pdb}
+	b := &Book{pdb: pdb, boundary: -1}
 	if err := b.parseRecord0(rec0); err != nil {
 		return nil, err
 	}
 	if b.mobi.Version < 8 {
-		if err := b.loadAllText(); err != nil {
+		if boundary, ok := b.kf8Boundary(); ok {
+			if err := b.openKF8Half(boundary); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if b.mobi.Version >= 8 {
+		if err := b.loadKF8(); err != nil {
 			return nil, err
 		}
+	} else if err := b.loadAllText(); err != nil {
+		return nil, err
 	}
 	return b, nil
 }
