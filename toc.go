@@ -48,14 +48,21 @@ const (
 // no position (and for KF8 entries, whose kindle:pos references resolve
 // to sections in the KF8 reassembly stage). Length is the entry's tag-2
 // length when present, else -1. Fid and Off carry the KF8 pos pair
-// (tag 6), -1 when absent. Children recurse in document order.
+// (tag 6), -1 when absent. For KF8 books, Section and SectionOffset
+// resolve that pair: the reassembled section's index (KF8Sections) and
+// a byte offset into that section's assembled XHTML (the same raw-byte
+// coordinate system as StartByte — decode after measuring); both stay
+// -1 on MOBI6 and on unresolvable KF8 entries. Children recurse in
+// document order.
 type TOCItem struct {
-	Label     string
-	StartByte int
-	Length    int
-	Fid       int
-	Off       int
-	Children  []TOCItem
+	Label         string
+	StartByte     int
+	Length        int
+	Fid           int
+	Off           int
+	Section       int
+	SectionOffset int
+	Children      []TOCItem
 }
 
 // GuideEntry is one guide (landmark) reference. For KF8 books Href is
@@ -124,14 +131,16 @@ func (b *Book) parseNCXIndex(firstIdx int) ([]TOCItem, error) {
 	flat := make([]ncxFlat, len(entries))
 	for i, e := range entries {
 		f := ncxFlat{
-			start:      -1,
-			length:     -1,
-			fid:        -1,
-			off:        -1,
-			level:      -1,
-			parent:     -1,
-			firstChild: -1,
-			lastChild:  -1,
+			start:         -1,
+			length:        -1,
+			fid:           -1,
+			off:           -1,
+			level:         -1,
+			parent:        -1,
+			firstChild:    -1,
+			lastChild:     -1,
+			section:       -1,
+			sectionOffset: -1,
 		}
 		if vs := e.Values[ncxTagOffset]; len(vs) > 0 {
 			f.start = vs[0]
@@ -162,6 +171,16 @@ func (b *Book) parseNCXIndex(firstIdx int) ([]TOCItem, error) {
 		if vs := e.Values[ncxTagLastChild]; len(vs) > 0 {
 			f.lastChild = vs[0]
 		}
+		// KF8 entries carry their target as a pos pair; resolve it to
+		// (section, offset) through the reassembly tables. KindleUnpack
+		// retargets dangling links to the top of their file and
+		// foliate-js leaves them undefined; an unresolvable pair keeps
+		// Section -1 rather than failing the whole TOC.
+		if b.kf8Loaded && f.fid >= 0 {
+			if section, offset, err := b.resolvePos(f.fid, f.off); err == nil {
+				f.section, f.sectionOffset = section, offset
+			}
+		}
 		flat[i] = f
 	}
 	return buildTOCTree(flat), nil
@@ -169,14 +188,16 @@ func (b *Book) parseNCXIndex(firstIdx int) ([]TOCItem, error) {
 
 // ncxFlat is one NCX entry before tree assembly.
 type ncxFlat struct {
-	label      string
-	start      int
-	length     int
-	fid, off   int
-	level      int
-	parent     int
-	firstChild int
-	lastChild  int
+	label         string
+	start         int
+	length        int
+	fid, off      int
+	level         int
+	parent        int
+	firstChild    int
+	lastChild     int
+	section       int
+	sectionOffset int
 }
 
 // buildTOCTree assembles the entry list into a tree, preferring parent
@@ -306,11 +327,13 @@ func assembleTOC(flat []ncxFlat, children [][]int, i int, used []bool) TOCItem {
 
 func (f ncxFlat) item() TOCItem {
 	return TOCItem{
-		Label:     f.label,
-		StartByte: f.start,
-		Length:    f.length,
-		Fid:       f.fid,
-		Off:       f.off,
+		Label:         f.label,
+		StartByte:     f.start,
+		Length:        f.length,
+		Fid:           f.fid,
+		Off:           f.off,
+		Section:       f.section,
+		SectionOffset: f.sectionOffset,
 	}
 }
 

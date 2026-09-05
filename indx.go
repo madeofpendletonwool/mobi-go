@@ -106,12 +106,13 @@ func (c *cncxPool) lookup(off int) (string, bool) {
 // entries in file order alongside the CNCX pool. The record layout
 // follows both port sources: firstIdx is the header record; entry
 // records run firstIdx+1 .. firstIdx+header.Count; CNCX records follow
-// immediately.
+// immediately. Indexes count from the active half's start (combo
+// files shift the KF8 half's indexes by its boundary).
 func (b *Book) readIndex(firstIdx int) ([]indexEntry, *cncxPool, error) {
 	if firstIdx < 0 {
 		return nil, nil, fmt.Errorf("%w: index record %d", ErrRecordRange, firstIdx)
 	}
-	first, err := b.pdb.Record(firstIdx)
+	first, err := b.loadRecord(firstIdx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -131,7 +132,7 @@ func (b *Book) readIndex(firstIdx int) ([]indexEntry, *cncxPool, error) {
 	// CNCX records sit right after the last entry record.
 	var cncxRecords [][]byte
 	for i := range uint32(hdr.NumCNCX) {
-		rec, err := b.pdb.Record(firstIdx + 1 + int(hdr.Count) + int(i))
+		rec, err := b.loadRecord(firstIdx + 1 + int(hdr.Count) + int(i))
 		if err != nil {
 			return nil, nil, fmt.Errorf("index record %d: cncx record %d: %w", firstIdx, i, err)
 		}
@@ -144,7 +145,7 @@ func (b *Book) readIndex(firstIdx int) ([]indexEntry, *cncxPool, error) {
 
 	var entries []indexEntry
 	for i := range uint32(hdr.Count) {
-		rec, err := b.pdb.Record(firstIdx + 1 + int(i))
+		rec, err := b.loadRecord(firstIdx + 1 + int(i))
 		if err != nil {
 			return nil, nil, fmt.Errorf("index record %d: entry record %d: %w", firstIdx, i, err)
 		}

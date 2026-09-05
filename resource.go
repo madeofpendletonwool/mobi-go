@@ -24,12 +24,14 @@ import (
 var ErrNoCover = errors.New("mobi: no cover image")
 
 // Resource record magics, probed with RecordMagic (stage 2). The INDX
-// magic also marks the trailing index records the TOC stage consumes.
+// magic also marks the trailing index records the TOC stage consumes;
+// RESC marks the KF8 spine-properties record.
 var (
 	identFONT = [4]byte{'F', 'O', 'N', 'T'}
 	identVIDE = [4]byte{'V', 'I', 'D', 'E'}
 	identAUDI = [4]byte{'A', 'U', 'D', 'I'}
 	identINDX = [4]byte{'I', 'N', 'D', 'X'}
+	identRESC = [4]byte{'R', 'E', 'S', 'C'}
 )
 
 // FONT record layout, beyond the shared 4-byte magic. Header fields
@@ -125,17 +127,28 @@ func (b *Book) NumResources() int {
 
 // resourceEnd returns the exclusive record index one past the last
 // resource record. Resources nominally run from firstImageIndex to the
-// container's end, but trailing index records belong to later stages:
-// when the MOBI header's indx field names their position it bounds the
-// run, and otherwise records are probed by magic so a trailing INDX
-// run is not reported as resources. The KF8 stage will claim further
-// trailing records (FDST, skeleton indexes) the same way.
+// end of the active half, but trailing index records belong to later
+// stages: when the MOBI header's indx field names their position it
+// bounds the run, and otherwise records are probed by magic so a
+// trailing INDX run is not reported as resources. Combo views cap at
+// the boundary — the KF8 half's shared images live in the MOBI6 half
+// (the header's 0x0800 "shared resources" flag), and the MOBI6 half's
+// records stop before the BOUNDARY record at boundary-1.
 func (b *Book) resourceEnd() int {
 	end := b.pdb.NumRecords()
-	if b.mobi.Indx > b.mobi.FirstImageIndex && int(b.mobi.Indx) < end {
-		return int(b.mobi.Indx)
+	if b.boundary >= 0 {
+		end = min(end, b.boundary)
 	}
-	for p := int(b.mobi.FirstImageIndex); p < end; p++ {
+	if b.m6End > 0 {
+		end = min(end, b.m6End)
+	}
+	start := int(b.mobi.FirstImageIndex)
+	if b.mobi.Indx >= 0 {
+		if indx := b.start + int(b.mobi.Indx); indx > start && indx < end {
+			return indx
+		}
+	}
+	for p := start; p < end; p++ {
 		if magic, err := b.pdb.RecordMagic(p); err == nil && magic == identINDX {
 			return p
 		}
